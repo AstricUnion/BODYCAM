@@ -2,10 +2,11 @@
 --@shared
 --@owneronly
 
----@type Player
-local OWNER = owner()
 
 if SERVER then
+    --[[
+    ---@type Player
+    local OWNER = owner()
     OWNER:setWalkSpeed(150)
     OWNER:setRunSpeed(300)
 
@@ -14,8 +15,10 @@ if SERVER then
         if OWNER:isOnGround() then
             OWNER:setVelocity(velo / 40)
         end
-    end)
+    end)]]
 else
+    ---@type Player
+    local OWNER = player()
     enableHud(nil, true)
     local current = OWNER:getEyeAngles()
     local slopeOnMove = 0
@@ -28,11 +31,7 @@ else
 
     timer.create("randomAngles", 0.6, 0, function()
         local random = function() return math.rand(-20, 20) end
-        targetOffset = Angle(
-            random(),
-            random(),
-            random()
-        )
+        targetOffset = Angle(random(), random(), random())
     end)
 
     local function walkAnimationFunc()
@@ -44,9 +43,9 @@ else
             walkAnimation = Angle(
                math.cos(math.rad(walkAnimationStep * (180 + math.rand(-5, 5)))),
                math.sin(math.rad(walkAnimationStep * (90 + math.rand(-5, 5)))),
-               math.sin(math.rad(walkAnimationStep * (10 + math.rand(-5, 5))))
+               math.sin(math.rad(walkAnimationStep * (-90 + math.rand(-5, 5))))
             ) * (length / 5 * delta)
-            walkAnimationStep = walkAnimationStep + 0.2 * walkAnimationMultiplier * (length / 10 * delta)
+            walkAnimationStep = walkAnimationStep + 0.2 * walkAnimationMultiplier * (length / 20 * delta)
             if walkAnimationStep >= 1 or walkAnimationStep <= -1 then
                 walkAnimationMultiplier = -walkAnimationMultiplier
             end
@@ -206,13 +205,33 @@ else
         end
     end
 
+    local function drawCrosshair()
+        ---@type TraceResult
+        local tr = OWNER:getEyeTrace()
+        if !tr then return end
+        local pos = render.getEyePos()
+        local ang = (tr.HitPos - pos):getAngle()
+        local m = Matrix(ang + Angle(90, 0, 0), tr.HitPos - ang:getForward() * 10)
+        m:rotate(Angle(0, -90, 0))
+        render.pushMatrix(m)
+        do
+            render.enableDepth(false)
+            render.setColor(Color(255, 0, 0))
+            render.setMaterial(censorMat)
+            render.drawTexturedRect(-1, -1, 2, 2)
+        end
+        render.popMatrix()
+    end
+
     hook.add("PostDrawTranslucentRenderables", "censor", function()
         drawCensor()
+        drawCrosshair()
     end)
 
 
     local lastEyeAng = Angle()
 
+    local fontRobotoBold32 = render.createFont("Monospace",24,500,false,false,false,false,0,false,0)
     hook.add("PostDrawHUD", "", function()
         local currentEyeAng = render.getAngles()
         local diffNotNorm = (lastEyeAng - currentEyeAng) * 4
@@ -233,12 +252,9 @@ else
             math.normalizeAngle(lastEyeAng.y),
             math.normalizeAngle(lastEyeAng.r)
         )
-
-        ---@type TraceResult
-        local tr = OWNER:getEyeTrace()
-        if !tr then return end
-        local coords = tr.HitPos:toScreen()
-        render.drawRect(coords.x - 2, coords.y - 2, 4, 4)
+        render.setFont(fontRobotoBold32)
+        render.drawText(30, 30, "RECORD " .. os.date("%d.%m.%Y %X"))
+        render.drawText(30, 54, OWNER:getHealth() .. " HP, " .. OWNER:getArmor() .. " ARMOR")
     end)
 
 
@@ -257,7 +273,7 @@ else
         local offset = viewmodelOffset / boneCount / 3
         ---@cast offset Vector
         if offset:getLength() > 100 then return lastOffset end
-        lastOffset = math.lerpVector(0.2, lastOffset, offset)
+        lastOffset = math.lerpVector(0.5, lastOffset, offset)
         return lastOffset
     end
 
@@ -282,7 +298,7 @@ else
         current = math.lerpAngle(0.2, current, angles + Angle(0, 0, 2 * -slope) + currentOffset - vmOffset) + currentShake
         ---@class obj: ViewData
         local obj = {
-            origin = origin + (angles:getRight() * 5) + Vector(0, 0, -2) + Vector(4, 0, 0):getRotated(Angle(0, angles.y, 0)) + (angles:getForward() * 5),
+            origin = origin + (angles:getRight() * 5) + Vector(0, 0, -2) + Vector(2, 0, 0):getRotated(Angle(0, angles.y, 0)) + (angles:getForward() * 5),
             angles = current + Angle(velocityZ / 50 + slopeOnMove / 30, 0, 0) + walkAnimation + OWNER:getViewPunchAngles() * math.rand(-1, 1) / 2,
             fov = 140,
         }
