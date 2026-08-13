@@ -223,7 +223,7 @@ else
         render.popMatrix()
     end
 
-    hook.add("PostDrawTranslucentRenderables", "censor", function()
+    hook.add("PostDrawTranslucentRenderables", "Censor", function()
         drawCensor()
         drawCrosshair()
     end)
@@ -232,7 +232,8 @@ else
     local lastEyeAng = Angle()
 
     local fontRobotoBold32 = render.createFont("Monospace",24,500,false,false,false,false,0,false,0)
-    hook.add("PostDrawHUD", "", function()
+    hook.add("PostDrawHUD", "D", function()
+        render.updateScreenEffectTexture()
         local currentEyeAng = render.getAngles()
         local diffNotNorm = (lastEyeAng - currentEyeAng) * 4
         local diff = Angle(
@@ -298,7 +299,7 @@ else
         current = math.lerpAngle(0.2, current, angles + Angle(0, 0, 2 * -slope) + currentOffset - vmOffset) + currentShake
         ---@class obj: ViewData
         local obj = {
-            origin = origin + (angles:getRight() * 5) + Vector(0, 0, -2) + Vector(2, 0, 0):getRotated(Angle(0, angles.y, 0)) + (angles:getForward() * 5),
+            origin = origin + (angles:getRight() * 5) + Vector(0, 0, 2) + Vector(1, 0, 0):getRotated(Angle(0, angles.y, 0)) + (angles:getForward() * 2),
             angles = current + Angle(velocityZ / 50 + slopeOnMove / 30, 0, 0) + walkAnimation + OWNER:getViewPunchAngles() * math.rand(-1, 1) / 2,
             fov = 140,
         }
